@@ -14,6 +14,9 @@ Single file, no build step, no dependencies.
 - Live-class look: host tile, participants, recording dot, class timer
 - Timestamped notes while you watch (saved in your browser)
 - Rejoin the same link and resume where you left
+- Top and bottom bars auto-hide for a bigger view (tap the screen to bring them back)
+- Fullscreen button (locks to landscape on supported phones)
+- Settings on the home page: your name, host name, and the number and names of participants
 - Dark and light themes, works on phone and desktop
 
 ## Use it
@@ -42,7 +45,9 @@ Any HTTPS host works too (Netlify, Cloudflare Pages).
 
 ## Customise
 
-Everything is in `index.html`. To change the fake participant names, edit the `PEOPLE` list in the script.
+Use the **Settings** button on the home page to change your name, the host name, and the number and names of participants. Settings are saved in your browser.
+
+Everything else is in `index.html`.
 
 ## Contributing
 

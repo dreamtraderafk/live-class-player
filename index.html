@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <title>Live Class Player</title>
 <style>
   :root {
@@ -37,26 +39,31 @@
   #join { height:100%; overflow:auto; display:grid; place-items:center; padding:20px; }
   .card {
     width:100%; max-width:440px; background:var(--panel); border:1px solid var(--border);
-    border-radius:16px; padding:28px 24px; box-shadow:var(--shadow);
+    border-radius:16px; padding:18px 24px 28px; box-shadow:var(--shadow);
   }
-  .brand { display:flex; align-items:center; gap:12px; margin-bottom:22px; }
+  .cardtop { display:flex; justify-content:flex-end; margin-bottom:6px; }
+  .set-btn {
+    display:flex; align-items:center; gap:6px; background:var(--panel-2); color:var(--text); border:1px solid var(--border);
+    border-radius:999px; padding:6px 12px 6px 10px; font-size:13px; font-weight:600; cursor:pointer;
+  }
+  .set-btn:hover { border-color:var(--accent); }
+  .brand { display:flex; align-items:center; gap:12px; margin-bottom:18px; }
   .brand .logo {
-    width:44px; height:44px; border-radius:12px; background:var(--accent); color:#fff;
+    width:44px; height:44px; flex:none; border-radius:12px; background:var(--accent); color:#fff;
     display:grid; place-items:center;
   }
   .brand h1 { font-size:20px; margin:0; font-weight:700; letter-spacing:-.01em; }
   .brand p { margin:2px 0 0; font-size:13px; color:var(--muted); }
+  .warn { background:rgba(245,71,63,.12); border:1px solid var(--danger); border-radius:10px; padding:10px 12px; font-size:13px; margin-bottom:14px; }
   label.f { display:block; font-size:13px; font-weight:600; margin:14px 0 6px; }
-  input.t {
+  input.t, textarea.t {
     width:100%; font-size:16px; padding:12px 14px; border-radius:10px; border:1px solid var(--border);
-    background:var(--panel-2); color:var(--text);
+    background:var(--panel-2); color:var(--text); font-family:inherit;
   }
-  input.t::placeholder { color:var(--muted); }
-  .row { display:flex; gap:10px; }
-  .row > div { flex:1; min-width:0; }
+  textarea.t { resize:vertical; min-height:120px; line-height:1.5; }
+  input.t::placeholder, textarea.t::placeholder { color:var(--muted); }
   .resume { display:flex; align-items:center; gap:8px; margin-top:12px; font-size:14px; }
   .resume input { width:18px; height:18px; accent-color:var(--accent); }
-  .warn { background:rgba(245,71,63,.12); border:1px solid var(--danger); border-radius:10px; padding:10px 12px; font-size:13px; margin-bottom:14px; }
   .err { color:var(--danger); font-size:13px; min-height:18px; margin-top:10px; }
   .btn-join {
     width:100%; margin-top:6px; padding:14px; font-size:16px; font-weight:700; border:0; border-radius:10px;
@@ -83,6 +90,7 @@
   .chip { font-size:12px; font-variant-numeric:tabular-nums; background:var(--panel-2); border-radius:6px; padding:5px 9px; white-space:nowrap; }
   .icon-btn { background:none; border:0; color:var(--text); width:32px; height:32px; border-radius:8px; display:grid; place-items:center; cursor:pointer; }
   .icon-btn:hover { background:var(--panel-2); }
+  #themeIco svg { width:18px; height:18px; }
 
   .main { flex:1; min-height:0; display:flex; position:relative; }
   .stagecol { flex:1; min-width:0; display:flex; flex-direction:column; background:var(--stagebg); }
@@ -102,7 +110,7 @@
   .stagearea { flex:1; min-height:0; display:grid; place-items:center; padding:6px 12px 12px; }
   .video {
     position:relative; background:#000; border-radius:10px; overflow:hidden;
-    outline:3px solid transparent; outline-offset:0; transition:outline-color .3s; user-select:none; -webkit-user-select:none;
+    outline:3px solid transparent; outline-offset:0; transition:outline-color .3s, border-radius .25s; user-select:none; -webkit-user-select:none;
   }
   .video.live { outline-color:var(--ok); }
   .video iframe { position:absolute; inset:0; width:100%; height:100%; border:0; pointer-events:none; }
@@ -157,19 +165,48 @@
   .leave { background:var(--danger); color:#fff; border:0; border-radius:8px; padding:9px 16px; font-weight:600; font-size:14px; cursor:pointer; }
   .leave:hover { filter:brightness(1.1); }
 
+  /* ---------- Auto-hide (immersive) ---------- */
+  .top, .bar {
+    overflow:hidden;
+    transition:height .25s ease, opacity .2s ease, border-width .25s ease, visibility 0s linear 0s;
+  }
+  .strip { transition:height .25s ease, padding .25s ease, opacity .2s ease; }
+  .stagearea { transition:padding .25s ease; }
+  #class.immersive .top, #class.immersive .bar {
+    height:0; opacity:0; border-width:0; visibility:hidden;
+    transition:height .25s ease, opacity .2s ease, border-width .25s ease, visibility 0s linear .25s;
+  }
+  #class.immersive .strip { height:0; padding-top:0; padding-bottom:0; opacity:0; overflow:hidden; }
+  #class.immersive .stagearea { padding:0; }
+  #class.immersive .video { border-radius:0; outline-color:transparent; }
+  @media (prefers-reduced-motion: reduce) {
+    .top, .bar, .strip, .stagearea, .video { transition:none !important; }
+  }
+
   .toast {
     position:fixed; left:50%; bottom:calc(80px + env(safe-area-inset-bottom, 0px)); transform:translateX(-50%);
     background:#000c; color:#fff; padding:9px 14px; border-radius:8px; font-size:13px; z-index:60; max-width:90%; text-align:center;
   }
   .modal-bg { position:fixed; inset:0; z-index:70; background:rgba(0,0,0,.55); display:none; place-items:center; padding:20px; }
   .modal-bg.show { display:grid; }
-  .modal { background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:22px; width:100%; max-width:360px; box-shadow:var(--shadow); }
+  .modal { background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:22px; width:100%; max-width:360px; max-height:100%; overflow:auto; box-shadow:var(--shadow); }
+  .modal.wide { max-width:400px; }
   .modal h3 { margin:0 0 6px; font-size:17px; }
   .modal p { margin:0 0 18px; font-size:14px; color:var(--muted); }
-  .modal .acts { display:flex; gap:10px; justify-content:flex-end; }
-  .modal button { border:0; border-radius:8px; padding:10px 16px; font-weight:600; font-size:14px; cursor:pointer; }
+  .modal .acts { display:flex; gap:10px; justify-content:flex-end; margin-top:18px; }
+  .modal button.act { border:0; border-radius:8px; padding:10px 16px; font-weight:600; font-size:14px; cursor:pointer; }
   .b-ghost { background:var(--panel-2); color:var(--text); }
   .b-danger { background:var(--danger); color:#fff; }
+  .b-primary { background:var(--accent); color:#fff; }
+  .modal label.f:first-of-type { margin-top:8px; }
+  .stepper { display:flex; align-items:center; gap:12px; }
+  .stepper button {
+    width:40px; height:40px; border-radius:50%; border:1px solid var(--border); background:var(--panel-2);
+    color:var(--text); font-size:22px; line-height:1; cursor:pointer;
+  }
+  .stepper button:hover { border-color:var(--accent); }
+  .stepper output { min-width:32px; text-align:center; font-size:20px; font-weight:700; font-variant-numeric:tabular-nums; }
+  .hint-s { font-size:12px; color:var(--muted); margin-top:6px; }
 
   @media (max-width: 800px) {
     .side { position:absolute; inset:0; width:auto; z-index:20; border-left:0; }
@@ -189,6 +226,12 @@
 <!-- ============ JOIN ============ -->
 <section id="join">
   <div class="card">
+    <div class="cardtop">
+      <button class="set-btn" id="gearBtn" aria-label="Settings">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        Settings
+      </button>
+    </div>
     <div class="brand">
       <div class="logo">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="m16 10 6-3v10l-6-3z"/></svg>
@@ -204,16 +247,8 @@
     <label class="f" for="link">YouTube link</label>
     <input class="t" id="link" type="url" inputmode="url" placeholder="https://youtu.be/..." autocomplete="off">
 
-    <div class="row">
-      <div>
-        <label class="f" for="cname">Class name</label>
-        <input class="t" id="cname" type="text" placeholder="Anatomy: Upper limb" autocomplete="off">
-      </div>
-      <div>
-        <label class="f" for="uname">Your name</label>
-        <input class="t" id="uname" type="text" placeholder="You" autocomplete="off">
-      </div>
-    </div>
+    <label class="f" for="cname">Class name</label>
+    <input class="t" id="cname" type="text" placeholder="Anatomy: Upper limb" autocomplete="off">
 
     <label class="resume hidden" id="resumeRow"><input type="checkbox" id="resumeChk" checked> <span id="resumeTxt">Resume from 0:00</span></label>
     <div class="err" id="err" role="alert"></div>
@@ -239,9 +274,7 @@
     </div>
     <div class="right">
       <div class="chip" id="timeChip">0:00</div>
-      <button class="icon-btn" id="fsBtn" title="Full screen" aria-label="Full screen">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
-      </button>
+      <button class="icon-btn" id="themeBtn" title="Switch theme" aria-label="Switch theme"><span id="themeIco"></span></button>
     </div>
   </header>
 
@@ -254,7 +287,7 @@
           <div class="shieldlayer" id="shieldlayer"></div>
           <div class="namebar">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v4"/></svg>
-            <span>Faculty (Host)</span>
+            <span id="hostName">Faculty (Host)</span>
           </div>
           <div class="prog"><i id="progFill"></i></div>
           <div class="overlay hint" id="hintOv">
@@ -306,22 +339,53 @@
         <span>Notes</span>
       </button>
       <button class="tb" id="handBtn"><span class="emo">✋</span><span>Raise hand</span></button>
-      <button class="tb" id="themeBtn"><span id="themeIco"></span><span id="themeTxt">Light</span></button>
+      <button class="tb" id="fsBtn"><span id="fsIco"></span><span id="fsTxt">Fullscreen</span></button>
     </div>
     <div class="grp"><button class="leave" id="leaveBtn">Leave</button></div>
   </footer>
 </section>
 
+<!-- ============ MODALS ============ -->
 <div class="modal-bg" id="leaveModal">
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="lmT">
     <h3 id="lmT">Leave this class?</h3>
     <p>Your place is saved. Rejoin with the same link to resume.</p>
-    <div class="acts">
-      <button class="b-ghost" id="stayBtn">Stay</button>
-      <button class="b-danger" id="leaveOk">Leave class</button>
+    <div class="acts" style="margin-top:0">
+      <button class="act b-ghost" id="stayBtn">Stay</button>
+      <button class="act b-danger" id="leaveOk">Leave class</button>
     </div>
   </div>
 </div>
+
+<div class="modal-bg" id="settingsModal">
+  <div class="modal wide" role="dialog" aria-modal="true" aria-labelledby="smT">
+    <h3 id="smT">Settings</h3>
+
+    <label class="f" for="sUname">Your name</label>
+    <input class="t" id="sUname" type="text" maxlength="30" placeholder="You" autocomplete="off">
+
+    <label class="f" for="sHost">Host name</label>
+    <input class="t" id="sHost" type="text" maxlength="30" placeholder="Faculty" autocomplete="off">
+
+    <label class="f" for="sMinus">Number of participants</label>
+    <div class="stepper">
+      <button type="button" id="sMinus" aria-label="Fewer participants">−</button>
+      <output id="sCount" aria-live="polite">0</output>
+      <button type="button" id="sPlus" aria-label="More participants">+</button>
+    </div>
+
+    <label class="f" for="sNames">Participant names (one per line)</label>
+    <textarea class="t" id="sNames" spellcheck="false" autocomplete="off"></textarea>
+    <div class="hint-s">Up to 30. Adding or removing lines changes the number.</div>
+
+    <div class="acts">
+      <button class="act b-ghost" id="sReset">Reset</button>
+      <button class="act b-ghost" id="sCancel">Cancel</button>
+      <button class="act b-primary" id="sSave">Save</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast hidden" id="toast" role="status"></div>
 
 <script>
@@ -338,6 +402,9 @@
   var ICO_MICSM = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 2l20 20M9 9v2a3 3 0 0 0 5.1 2.1M15 9.3V5a3 3 0 0 0-5.9-.7M5 11a7 7 0 0 0 11.3 5.5M12 18v4"/></svg>';
   var ICO_SUN = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>';
   var ICO_MOON = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 13A9 9 0 1 1 11 3a7 7 0 0 0 10 10z"/></svg>';
+  var ICO_FS = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/></svg>';
+  var ICO_FSOFF = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v3a2 2 0 0 1-2 2H3M21 8h-3a2 2 0 0 1-2-2V3M3 16h3a2 2 0 0 1 2 2v3M16 21v-3a2 2 0 0 1 2-2h3"/></svg>';
+  $("#fsIco").innerHTML = ICO_FS;
 
   /* ---------- Helpers ---------- */
   function fmt(s) {
@@ -394,7 +461,6 @@
   function applyTheme(th) {
     document.documentElement.setAttribute("data-theme", th);
     $("#themeIco").innerHTML = th === "dark" ? ICO_SUN : ICO_MOON;
-    $("#themeTxt").textContent = th === "dark" ? "Light" : "Dark";
     lsSet("lcp-theme", th);
   }
   applyTheme(lsGet("lcp-theme") === "light" ? "light" : "dark");
@@ -402,11 +468,76 @@
     applyTheme(document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark");
   };
 
+  /* ---------- Settings (your name, host, participants) ---------- */
+  var MAXP = 30;
+  var POOL = ["Aarav S.", "Priya M.", "Rohan K.", "Sneha P.", "Kunal J.", "Ananya R.", "Vikram T.", "Neha G.", "Arjun D.", "Isha B.",
+    "Rahul V.", "Kavya N.", "Manav L.", "Diya H.", "Siddharth P.", "Meera C.", "Yash A.", "Tanvi S.", "Harsh K.", "Riya M.",
+    "Aditya R.", "Pooja D.", "Nikhil B.", "Simran K.", "Dev P.", "Aisha Q.", "Karan M.", "Shreya T.", "Ishaan G.", "Naina J."];
+  var DEFAULT_NAMES = POOL.slice(0, 6);
+
+  function loadSettings() {
+    var s = null;
+    try { s = JSON.parse(lsGet("lcp-settings") || "null"); } catch (e) {}
+    if (!s || typeof s !== "object") s = {};
+    var names = Array.isArray(s.names)
+      ? s.names.filter(function (n) { return typeof n === "string" && n.trim(); })
+          .map(function (n) { return n.trim().slice(0, 30); }).slice(0, MAXP)
+      : DEFAULT_NAMES.slice();
+    var me = typeof s.me === "string" ? s.me : (lsGet("lcp-uname") || "");
+    var host = typeof s.host === "string" && s.host.trim() ? s.host : "Faculty";
+    return { me: me.trim().slice(0, 30), host: host.trim().slice(0, 30), names: names };
+  }
+  var settings = loadSettings();
+
+  function readNames() {
+    return $("#sNames").value.split("\n").map(function (x) { return x.trim().slice(0, 30); })
+      .filter(Boolean).slice(0, MAXP);
+  }
+  function setNames(list) {
+    $("#sNames").value = list.join("\n");
+    $("#sCount").textContent = list.length;
+  }
+  function fillSettings(s) {
+    $("#sUname").value = s.me;
+    $("#sHost").value = s.host;
+    setNames(s.names);
+  }
+  function openSettings() {
+    fillSettings(settings);
+    $("#settingsModal").classList.add("show");
+    setTimeout(function () { $("#sUname").focus(); }, 30);
+  }
+  function closeSettings() { $("#settingsModal").classList.remove("show"); }
+  $("#gearBtn").onclick = openSettings;
+  $("#sCancel").onclick = closeSettings;
+  $("#settingsModal").addEventListener("click", function (e) { if (e.target === this) closeSettings(); });
+  $("#sNames").addEventListener("input", function () { $("#sCount").textContent = readNames().length; });
+  $("#sPlus").onclick = function () {
+    var l = readNames();
+    if (l.length >= MAXP) return;
+    var nm = null;
+    for (var i = 0; i < POOL.length; i++) if (l.indexOf(POOL[i]) < 0) { nm = POOL[i]; break; }
+    l.push(nm || "Student " + (l.length + 1));
+    setNames(l);
+    var ta = $("#sNames"); ta.scrollTop = ta.scrollHeight;
+  };
+  $("#sMinus").onclick = function () { var l = readNames(); l.pop(); setNames(l); };
+  $("#sReset").onclick = function () { fillSettings({ me: "", host: "Faculty", names: DEFAULT_NAMES.slice() }); };
+  $("#sSave").onclick = function () {
+    settings = {
+      me: $("#sUname").value.trim().slice(0, 30),
+      host: ($("#sHost").value.trim() || "Faculty").slice(0, 30),
+      names: readNames()
+    };
+    lsSet("lcp-settings", JSON.stringify(settings));
+    closeSettings();
+    toast("Settings saved");
+  };
+
   /* ---------- Join form ---------- */
-  var linkEl = $("#link"), cnameEl = $("#cname"), unameEl = $("#uname");
+  var linkEl = $("#link"), cnameEl = $("#cname");
   linkEl.value = lsGet("lcp-link") || "";
   cnameEl.value = lsGet("lcp-cname") || "";
-  unameEl.value = lsGet("lcp-uname") || "";
 
   function refreshResume() {
     var info = parseYT(linkEl.value), row = $("#resumeRow");
@@ -417,7 +548,7 @@
     } else row.classList.add("hidden");
   }
   linkEl.addEventListener("input", function () { $("#err").textContent = ""; refreshResume(); });
-  [linkEl, cnameEl, unameEl].forEach(function (el) {
+  [linkEl, cnameEl].forEach(function (el) {
     el.addEventListener("keydown", function (e) { if (e.key === "Enter") startClass(); });
   });
   $("#joinBtn").onclick = startClass;
@@ -429,17 +560,11 @@
   var frame = null, timers = [], wakeLock = null;
   var resizeObs = null;
 
-  var PEOPLE = [
-    { n: "Faculty", host: true }, { n: "Aarav S." }, { n: "Priya M." },
-    { n: "Rohan K." }, { n: "Sneha P." }, { n: "Kunal J." }, { n: "Ananya R." }
-  ];
-
   function startClass() {
     var info = parseYT(linkEl.value);
     if (!info) { $("#err").textContent = "That doesn't look like a YouTube link. Paste the full video or playlist link."; return; }
     lsSet("lcp-link", linkEl.value.trim());
     lsSet("lcp-cname", cnameEl.value.trim());
-    lsSet("lcp-uname", unameEl.value.trim());
 
     var key = keyOf(info);
     var saved = parseInt(lsGet("lcp-pos:" + key) || "0", 10);
@@ -447,12 +572,13 @@
     if (saved > 10 && $("#resumeChk").checked && !$("#resumeRow").classList.contains("hidden")) start = saved;
 
     S = {
-      key: key, info: info, me: unameEl.value.trim() || "You", hand: false, muted: false,
-      state: -1, cur: start, dur: 0, gotMsg: false, ended: false, active: true, notes: []
+      key: key, info: info, me: settings.me || "You", host: settings.host || "Faculty", names: settings.names.slice(),
+      hand: false, muted: false, state: -1, cur: start, dur: 0, gotMsg: false, ended: false, active: true, notes: []
     };
     try { S.notes = JSON.parse(lsGet("lcp-notes:" + key) || "[]"); } catch (e) { S.notes = []; }
 
     $("#classTitle").textContent = cnameEl.value.trim() || "Live Class";
+    $("#hostName").textContent = S.host + " (Host)";
     $("#join").classList.add("hidden");
     $("#class").classList.remove("hidden");
     ["#hintOv", "#endOv", "#errOv"].forEach(function (s) { $(s).classList.remove("show"); });
@@ -463,10 +589,13 @@
     closeSide();
     renderPeople();
     renderNotes();
+    barsHidden = false;
+    $("#class").classList.remove("immersive");
     fit();
     buildFrame(info, start);
     startTimers();
     requestWake();
+    armHide();
   }
 
   function buildFrame(info, start) {
@@ -523,7 +652,6 @@
   function onState(s) {
     if (!S || s === S.state) return;
     S.state = s;
-    var playing = s === 1 || s === 3;
     $("#video").classList.toggle("live", s === 1);
     if (s === 1) $("#hintOv").classList.remove("show");
     if (s === 2 && !S.ended) {
@@ -532,7 +660,6 @@
       resumeT = setTimeout(function () { if (S && S.state === 2) yt("playVideo"); }, 200);
     }
     if (s === 0) endClass();
-    if (!playing && s !== 0 && s !== 2) { /* unstarted / cued: watchdog handles it */ }
   }
   function armWatchdog() {
     clearTimeout(wd1); clearTimeout(wd2);
@@ -546,10 +673,6 @@
       if (S && S.gotMsg && S.state !== 1 && S.state !== 3 && !S.ended) $("#hintOv").classList.add("show");
     }, 7000);
   }
-  // Tapping the video can only ever START playback, never pause it.
-  $("#shieldlayer").addEventListener("click", function () {
-    if (S && S.state !== 1 && S.state !== 3 && !S.ended) { yt("unMute"); setMuted(false); yt("playVideo"); }
-  });
   $("#hintOv").addEventListener("click", function () {
     yt("unMute"); setMuted(false); yt("playVideo"); $("#hintOv").classList.remove("show");
   });
@@ -562,6 +685,7 @@
     $("#hintOv").classList.remove("show");
     $("#endOv").classList.add("show");
     $("#video").classList.remove("live");
+    setBars(true);
   }
   function showError(code) {
     var msgs = {
@@ -573,6 +697,7 @@
     };
     $("#errMsg").textContent = msgs[code] || "The owner may have blocked embedding, or the video is private.";
     $("#errOv").classList.add("show");
+    setBars(true);
   }
 
   /* ---------- Timers: clock, progress, saved position ---------- */
@@ -614,10 +739,98 @@
   }
   window.addEventListener("resize", fit);
 
+  /* ---------- Auto-hide bars ---------- */
+  var barsHidden = false, hideT = null, lastToggle = 0, lastTouch = 0, hintShown = false, hovering = false;
+
+  function canHide() {
+    return S && !panel && !S.ended &&
+      !$("#leaveModal").classList.contains("show") &&
+      !$("#errOv").classList.contains("show");
+  }
+  function armHide() {
+    clearTimeout(hideT);
+    hideT = setTimeout(function () {
+      if (!S) return;
+      if (canHide() && !hovering) setBars(false); else armHide();
+    }, 3500);
+  }
+  function setBars(visible) {
+    if (!S || barsHidden === !visible) return;
+    barsHidden = !visible;
+    lastToggle = Date.now();
+    $("#class").classList.toggle("immersive", barsHidden);
+    if (barsHidden) {
+      clearTimeout(hideT);
+      if (!hintShown) { hintShown = true; toast("Tap the screen to show controls"); }
+    } else armHide();
+  }
+  // Tap / click on the video toggles the bars (and can only ever START playback, never pause).
+  $("#shieldlayer").addEventListener("click", function () {
+    if (!S) return;
+    if (S.state !== 1 && S.state !== 3 && !S.ended) { yt("unMute"); setMuted(false); yt("playVideo"); }
+    setBars(barsHidden);
+  });
+  document.addEventListener("pointerdown", function (e) {
+    if (e.pointerType === "touch" || e.pointerType === "pen") lastTouch = Date.now();
+    if (S && !barsHidden) armHide();
+  }, true);
+  document.addEventListener("mousemove", function () {
+    if (!S || Date.now() - lastTouch < 1000) return;
+    if (barsHidden) { if (Date.now() - lastToggle > 800) setBars(true); }
+    else armHide();
+  });
+  document.addEventListener("focusin", function (e) {
+    if (S && barsHidden && e.target.closest && e.target.closest(".top, .bar, .side")) setBars(true);
+  });
+  [".top", ".bar"].forEach(function (sel) {
+    var el = $(sel);
+    el.addEventListener("mouseenter", function () { hovering = true; });
+    el.addEventListener("mouseleave", function () { hovering = false; if (S && !barsHidden) armHide(); });
+  });
+
+  /* ---------- Fullscreen ---------- */
+  var rootEl = document.documentElement;
+  function fsSupported() { return !!(rootEl.requestFullscreen || rootEl.webkitRequestFullscreen); }
+  function isFs() { return !!(document.fullscreenElement || document.webkitFullscreenElement); }
+  function exitFs() {
+    try {
+      var p = document.exitFullscreen ? document.exitFullscreen() : (document.webkitExitFullscreen && document.webkitExitFullscreen());
+      if (p && p.catch) p.catch(function () {});
+    } catch (e) {}
+  }
+  function fsFallback() {
+    closeSide();
+    setBars(false);
+    toast("Full screen isn't supported here. Controls hidden for a bigger view.");
+  }
+  $("#fsBtn").onclick = function () {
+    if (isFs()) { exitFs(); return; }
+    if (!fsSupported()) { fsFallback(); return; }
+    var p;
+    try { p = rootEl.requestFullscreen ? rootEl.requestFullscreen() : rootEl.webkitRequestFullscreen(); }
+    catch (e) { p = Promise.reject(e); }
+    Promise.resolve(p).then(function () {
+      try { screen.orientation.lock("landscape").catch(function () {}); } catch (e) {}
+      closeSide();
+      setBars(false);
+    }).catch(fsFallback);
+  };
+  function onFsChange() {
+    var on = isFs();
+    $("#fsIco").innerHTML = on ? ICO_FSOFF : ICO_FS;
+    $("#fsTxt").textContent = on ? "Exit" : "Fullscreen";
+    if (!on) {
+      try { screen.orientation.unlock(); } catch (e) {}
+      if (S) setBars(true);
+    }
+    setTimeout(fit, 60);
+  }
+  document.addEventListener("fullscreenchange", onFsChange);
+  document.addEventListener("webkitfullscreenchange", onFsChange);
+
   /* ---------- Participants ---------- */
   function renderPeople() {
-    var all = PEOPLE.slice();
-    all.splice(1, 0, { n: S.me, you: true });
+    var all = [{ n: S.host, host: true }, { n: S.me, you: true }].concat(S.names.map(function (n) { return { n: n }; }));
     var strip = "", list = "";
     all.forEach(function (p) {
       var name = p.you ? p.n + " (You)" : p.n;
@@ -645,6 +858,7 @@
   var panel = null;
   function openSide(which) {
     panel = which;
+    setBars(true);
     $("#side").classList.add("open");
     $("#sideTitle").textContent = which === "people" ? "Participants" : "Notes";
     $("#plist").classList.toggle("hidden", which !== "people");
@@ -703,35 +917,33 @@
     if (S.muted) { yt("unMute"); setMuted(false); } else { yt("mute"); setMuted(true); }
   };
 
-  /* ---------- Fullscreen ---------- */
-  $("#fsBtn").onclick = function () {
-    try {
-      if (document.fullscreenElement) document.exitFullscreen();
-      else document.documentElement.requestFullscreen().catch(function () { toast("Full screen isn't available here."); });
-    } catch (e) { toast("Full screen isn't available here."); }
-  };
-
   /* ---------- Leave ---------- */
   function leave() {
     if (S && S.gotMsg && S.cur > 5 && !S.ended) lsSet("lcp-pos:" + S.key, String(Math.floor(S.cur)));
     timers.forEach(function (t) { clearInterval(t); }); timers = [];
-    clearTimeout(wd1); clearTimeout(wd2); clearTimeout(resumeT);
+    clearTimeout(wd1); clearTimeout(wd2); clearTimeout(resumeT); clearTimeout(hideT);
     if (frame) { frame.src = "about:blank"; frame.remove(); frame = null; }
     try { if (wakeLock) wakeLock.release(); } catch (e) {}
     wakeLock = null;
+    if (isFs()) exitFs();
     S = null;
+    barsHidden = false;
+    $("#class").classList.remove("immersive");
     closeSide();
     $("#leaveModal").classList.remove("show");
     $("#class").classList.add("hidden");
     $("#join").classList.remove("hidden");
     refreshResume();
   }
-  $("#leaveBtn").onclick = function () { $("#leaveModal").classList.add("show"); };
-  $("#stayBtn").onclick = function () { $("#leaveModal").classList.remove("show"); };
+  $("#leaveBtn").onclick = function () { setBars(true); $("#leaveModal").classList.add("show"); };
+  $("#stayBtn").onclick = function () { $("#leaveModal").classList.remove("show"); armHide(); };
   $("#leaveOk").onclick = leave;
   $("#endLeave").onclick = leave;
   $("#errLeave").onclick = leave;
-  $("#leaveModal").addEventListener("click", function (e) { if (e.target === this) this.classList.remove("show"); });
+  $("#leaveModal").addEventListener("click", function (e) { if (e.target === this) { this.classList.remove("show"); armHide(); } });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") { closeSettings(); if ($("#leaveModal").classList.contains("show")) { $("#leaveModal").classList.remove("show"); armHide(); } }
+  });
 })();
 </script>
 </body>
